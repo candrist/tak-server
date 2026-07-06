@@ -79,7 +79,7 @@ fi
 
 # Add user to TAK database
 printf $info "Adding user to TAK database...\n"
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar /opt/tak/utils/UserManager.jar usermod -A -p $password $USERNAME"
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar /opt/tak/utils/UserManager.jar usermod -A -p '$password' $USERNAME"
 if [ $? -ne 0 ];
 then
 	printf $danger "Failed to add user to database\n"
