@@ -18,6 +18,13 @@ then
 	echo "Docker compose command set to new style $DOCKER_COMPOSE"
 fi
 
+# Load existing .env file if it exists to get pre-configured variables
+if [ -f ".env" ];
+then
+	printf $info "Loading configuration from existing .env file...\n"
+	source .env
+fi
+
 printf $success "\nTAK server setup script sponsored by CloudRF.com - \"The API for RF\"\n"
 printf $info "\nStep 1. Download the official docker image as a zip file from https://tak.gov/products/tak-server \nStep 2. Place the zip file in this tak-server folder.\n"
 printf $warning "\nYou should install this as a user. Elevated privileges (sudo) are only required to clean up a previous install eg. sudo ./scripts/cleanup.sh\n"
