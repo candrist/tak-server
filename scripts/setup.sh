@@ -23,7 +23,23 @@ if [ -f ".env" ];
 then
 	printf $info "Loading configuration from existing .env file...\n"
 	source .env
-	# Use HOSTNAME from .env if it was set (convert to lowercase variable for internal use)
+	# Use values from .env if they were set (convert to lowercase variables for internal use)
+	if [ -n "$COUNTRY" ];
+	then
+		country=$COUNTRY
+	fi
+	if [ -n "$STATE" ];
+	then
+		state=$STATE
+	fi
+	if [ -n "$CITY" ];
+	then
+		city=$CITY
+	fi
+	if [ -n "$ORGANIZATIONAL_UNIT" ];
+	then
+		orgunit=$ORGANIZATIONAL_UNIT
+	fi
 	if [ -n "$HOSTNAME" ];
 	then
 		hostname=$HOSTNAME
@@ -321,13 +337,32 @@ export ORGANIZATIONAL_UNIT=$orgunit
 export HOSTNAME=$hostname
 
 # Writes variables to a .env file for docker-compose
-cat << EOF > .env
+# Only write if .env doesn't exist, or if it's missing any required values
+WRITE_ENV=false
+if [ ! -f ".env" ];
+then
+	WRITE_ENV=true
+else
+	# Check if .env has all required values
+	if [ -z "$country" ] || [ -z "$state" ] || [ -z "$city" ] || [ -z "$orgunit" ];
+	then
+		WRITE_ENV=true
+	fi
+fi
+
+if [ "$WRITE_ENV" = true ];
+then
+	cat << EOF > .env
 COUNTRY=$country
 STATE=$state
 CITY=$city
 ORGANIZATIONAL_UNIT=$orgunit
 HOSTNAME=$hostname
 EOF
+	printf $info "Wrote configuration to .env file\n"
+else
+	printf $info "Preserving existing .env file\n"
+fi
 
 ### Update cert-metadata.sh with configured country. Fallback to US if variable not set.
 sed -i -e 's/COUNTRY=US/COUNTRY=${COUNTRY}/' $PWD/tak/certs/cert-metadata.sh
@@ -351,13 +386,13 @@ while :
 do
 	sleep 5 # let the PG stderr messages conclude...
 	printf $warning "------------CERTIFICATE GENERATION--------------\n"
-	$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeRootCa.sh --ca-name CRFtakserver"
+	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeRootCa.sh --ca-name CRFtakserver"
 	if [ $? -eq 0 ];
 	then
-		$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $CERT_HOST"
+		$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $CERT_HOST"
 		if [ $? -eq 0 ];
 		then
-			$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client $user"	
+			$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client $user"	
 			if [ $? -eq 0 ];
 			then
 				# Set permissions so user can write to certs/files
@@ -375,12 +410,12 @@ done
 printf $info "Creating certificates for 2 users in tak/certs/files for a quick setup via TAK's import function\n"
 
 # Make 2 users
-$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user1"
-$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user2"
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user1"
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user2"
 $DOCKER_COMPOSE exec tak bash -c "chown -R 1000:1000 /opt/tak/certs/"
 
-./scripts/certDP.sh $CERT_FILENAME user1
-./scripts/certDP.sh $CERT_FILENAME user2
+./scripts/certDP.sh $CERT_HOST user1
+./scripts/certDP.sh $CERT_HOST user2
 
 printf $info "Waiting for TAK server to connect to DB. This should loop several times only...\n"
 #$DOCKER_COMPOSE start tak
