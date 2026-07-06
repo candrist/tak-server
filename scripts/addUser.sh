@@ -21,18 +21,20 @@ fi
 
 if [ -z "$1" ];
 then
-	printf $danger "Usage: ./addUser.sh <username> [password] [--no-cert-package]\n"
+	printf $danger "Usage: ./addUser.sh <username> [password] [--admin] [--no-cert-package]\n"
 	printf $info "Example: ./addUser.sh newuser\n"
 	printf $info "Example: ./addUser.sh newuser mypassword\n"
-	printf $info "Example: ./addUser.sh newuser mypassword --no-cert-package\n"
+	printf $info "Example: ./addUser.sh newuser mypassword --admin\n"
+	printf $info "Example: ./addUser.sh newuser mypassword --admin --no-cert-package\n"
 	exit 1
 fi
 
 USERNAME=$1
 CREATE_DP=true
+CREATE_ADMIN=false
 
 # Check if password is provided
-if [ -n "$2" ] && [ "$2" != "--no-cert-package" ];
+if [ -n "$2" ] && [ "$2" != "--admin" ] && [ "$2" != "--no-cert-package" ];
 then
 	password=$2
 else
@@ -41,11 +43,17 @@ else
 	password=$pwd"DRN1!"
 fi
 
-# Check for --no-cert-package flag
-if [ "$2" == "--no-cert-package" ] || [ "$3" == "--no-cert-package" ];
-then
-	CREATE_DP=false
-fi
+# Check for flags
+for arg in "$@"; do
+	if [ "$arg" == "--admin" ];
+	then
+		CREATE_ADMIN=true
+	fi
+	if [ "$arg" == "--no-cert-package" ];
+	then
+		CREATE_DP=false
+	fi
+done
 
 printf $success "\n=== Creating TAK Server User ===\n"
 printf $info "Username: $USERNAME\n"
@@ -95,6 +103,27 @@ then
 	exit 1
 fi
 
+# Assign roles
+printf $info "Assigning roles...\n"
+# Always add ROLE_USER
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar rolemod -A $USERNAME ROLE_USER"
+if [ $? -ne 0 ];
+then
+	printf $danger "Failed to assign ROLE_USER\n"
+	exit 1
+fi
+
+# Add ROLE_ADMIN if requested
+if [ "$CREATE_ADMIN" = true ];
+then
+	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar rolemod -A $USERNAME ROLE_ADMIN"
+	if [ $? -ne 0 ];
+	then
+		printf $danger "Failed to assign ROLE_ADMIN\n"
+		exit 1
+	fi
+fi
+
 # Set permissions
 $DOCKER_COMPOSE exec tak bash -c "chown -R 1000:1000 /opt/tak/certs/"
 
@@ -108,6 +137,12 @@ fi
 printf $success "\n=== User Created Successfully ===\n"
 printf $success "Username: $USERNAME\n"
 printf $success "Password: $password\n"
+if [ "$CREATE_ADMIN" = true ];
+then
+	printf $success "Roles: ROLE_USER, ROLE_ADMIN\n"
+else
+	printf $success "Roles: ROLE_USER\n"
+fi
 printf $info "Certificate: tak/certs/files/$USERNAME.p12\n"
 if [ "$CREATE_DP" = true ];
 then
