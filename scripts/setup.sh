@@ -18,7 +18,6 @@ then
 	echo "Docker compose command set to new style $DOCKER_COMPOSE"
 fi
 
-
 printf $success "\nTAK server setup script sponsored by CloudRF.com - \"The API for RF\"\n"
 printf $info "\nStep 1. Download the official docker image as a zip file from https://tak.gov/products/tak-server \nStep 2. Place the zip file in this tak-server folder.\n"
 printf $warning "\nYou should install this as a user. Elevated privileges (sudo) are only required to clean up a previous install eg. sudo ./scripts/cleanup.sh\n"
@@ -237,15 +236,24 @@ fi
 done
 
 #NIC=$(route | grep default | awk '{print $8}' | head -n 1)
-IP=$(ip addr show $eth_interface | grep -m 1 "inet " | awk '{print $2}' | cut -d "/" -f1)
+#IP=$(ip addr show $eth_interface | grep -m 1 "inet " | awk '{print $2}' | cut -d "/" -f1)
+IP=$(ip -4 addr show "$eth_interface" | awk '/scope global/ {print $2; exit}' | cut -d/ -f1)
 
 printf $info "\nProceeding with IP address: $IP\n"
 sed -i "s/password=\".*\"/password=\"${pgpassword}\"/" tak/CoreConfig.xml
 # Replaces HOSTIP for rate limiter and Fed server. Database URL is a docker alias of tak-database
 sed -i "s/HOSTIP/$IP/g" tak/CoreConfig.xml
 
-# Replaces takserver.jks with $IP.jks
-sed -i "s/takserver.jks/$IP.jks/g" tak/CoreConfig.xml
+# Determine which identifier to use for certificate filenames: hostname or IP
+if [ -z "$hostname" ] || [ "$hostname" == "" ];
+then
+	CERT_FILENAME=$IP
+else
+	CERT_FILENAME=$hostname
+fi
+
+# Replaces takserver.jks with hostname.jks or IP.jks
+sed -i "s/takserver.jks/$CERT_FILENAME.jks/g" tak/CoreConfig.xml
 
 # Better memory allocation:
 # By default TAK server allocates memory based upon the *total* on a machine. 
@@ -288,12 +296,17 @@ then
 	orgunit="TAK"
 fi
 
+if [ -z "$hostname" ];
+then
+	hostname=""
+fi
+
 # Update local env
 export COUNTRY=$country
 export STATE=$state
 export CITY=$city
 export ORGANIZATIONAL_UNIT=$orgunit
-
+export HOSTNAME=$hostname
 
 # Writes variables to a .env file for docker-compose
 cat << EOF > .env
@@ -301,11 +314,21 @@ COUNTRY=$country
 STATE=$state
 CITY=$city
 ORGANIZATIONAL_UNIT=$orgunit
+HOSTNAME=$hostname
 EOF
 
 ### Update cert-metadata.sh with configured country. Fallback to US if variable not set.
 sed -i -e 's/COUNTRY=US/COUNTRY=${COUNTRY}/' $PWD/tak/certs/cert-metadata.sh
 
+# Determine cert hostname: use HOSTNAME if defined in .env, otherwise use IP
+if [ -z "$hostname" ] || [ "$hostname" == "" ];
+then
+	CERT_HOST=$IP
+	printf $info "Using IP address for certificate generation: $CERT_HOST\n"
+else
+	CERT_HOST=$hostname
+	printf $info "Using hostname for certificate generation: $CERT_HOST\n"
+fi
 
 ### Runs through setup, starts both containers
 $DOCKER_COMPOSE --file $DOCKERFILE up  --force-recreate -d
@@ -319,7 +342,7 @@ do
 	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeRootCa.sh --ca-name CRFtakserver"
 	if [ $? -eq 0 ];
 	then
-		$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $IP"
+		$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $CERT_HOST"
 		if [ $? -eq 0 ];
 		then
 			$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client $user"	
@@ -382,8 +405,16 @@ cp ./tak/certs/files/$user.p12 .
 ### Post-installation message to user including randomly generated passwrods to use for account and PostgreSQL
 docker container ls
 
+# Determine access URL: use hostname if defined, otherwise IP
+if [ -z "$hostname" ] || [ "$hostname" == "" ];
+then
+	ACCESS_URL=$IP
+else
+	ACCESS_URL=$hostname
+fi
+
 printf $warning "\n\nImport the $user.p12 certificate from this folder to your browser's certificate store as per the README.md file\n"
-printf $success "Login at https://$IP:8443 with your admin account. No need to run the /setup step as this has been done.\n" 
+printf $success "Login at https://$ACCESS_URL:8443 with your admin account. No need to run the /setup step as this has been done.\n" 
 printf $info "Certificates and .zip data packages are in tak/certs/files \n\n" 
 printf $success "Setup script sponsored by CloudRF.com - \"The API for RF\"\n\n"
 printf $danger "---------PASSWORDS----------------\n\n"
