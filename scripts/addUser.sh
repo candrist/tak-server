@@ -117,7 +117,7 @@ fi
 
 # Add certificate to user
 printf $info "Linking certificate to user...\n"
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar certmod -A certs/files/$USERNAME.pem"
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar certmod certs/files/$USERNAME.pem"
 if [ $? -ne 0 ];
 then
 	printf $danger "Failed to link certificate\n"
