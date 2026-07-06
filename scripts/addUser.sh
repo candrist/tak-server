@@ -35,17 +35,7 @@ CREATE_DP=true
 CREATE_ADMIN=false
 USE_PASSWORD=true
 
-# Check if password is provided
-if [ -n "$2" ] && [ "$2" != "--admin" ] && [ "$2" != "--no-cert-package" ] && [ "$2" != "--no-password" ];
-then
-	password=$2
-else
-	# Generate random password by default
-	pwd=$(cat /dev/urandom | tr -dc '[:alpha:][:digit:]' | fold -w ${1:-11} | head -n 1)
-	password=$pwd"DRN1!"
-fi
-
-# Check for flags
+# Check for flags first
 for arg in "$@"; do
 	if [ "$arg" == "--admin" ];
 	then
@@ -60,6 +50,19 @@ for arg in "$@"; do
 		USE_PASSWORD=false
 	fi
 done
+
+# Check if password is provided
+if [ "$USE_PASSWORD" = true ];
+then
+	if [ -n "$2" ] && [ "$2" != "--admin" ] && [ "$2" != "--no-cert-package" ] && [ "$2" != "--no-password" ];
+	then
+		password=$2
+	else
+		# Generate random password by default
+		pwd=$(cat /dev/urandom | tr -dc '[:alpha:][:digit:]' | fold -w 11 | head -n 1)
+		password=$pwd"DRN1!"
+	fi
+fi
 
 printf $success "\n=== Creating TAK Server User ===\n"
 printf $info "Username: $USERNAME\n"
