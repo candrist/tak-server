@@ -106,7 +106,7 @@ fi
 # Assign roles
 printf $info "Assigning roles...\n"
 # Always add ROLE_USER
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar rolemod -A $USERNAME ROLE_USER"
+$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar moduser $USERNAME ROLE_USER"
 if [ $? -ne 0 ];
 then
 	printf $danger "Failed to assign ROLE_USER\n"
@@ -116,7 +116,7 @@ fi
 # Add ROLE_ADMIN if requested
 if [ "$CREATE_ADMIN" = true ];
 then
-	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar rolemod -A $USERNAME ROLE_ADMIN"
+	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar moduser $USERNAME ROLE_ADMIN"
 	if [ $? -ne 0 ];
 	then
 		printf $danger "Failed to assign ROLE_ADMIN\n"
