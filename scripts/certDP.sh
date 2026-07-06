@@ -1,13 +1,36 @@
 #!/bin/bash
 # Makes an ATAK / iTAK friendly data package containing CA, user cert, user key
-if [ $# -eq 0 ]
-  then
-    echo "No arguments supplied. Need an IP and a user eg. ./certDP.sh 192.168.0.2 user1"
-    exit
+
+# Load .env file if it exists to get pre-configured hostname
+if [ -f ".env" ];
+then
+	source .env
+	# Use HOSTNAME from .env if it was set and no IP argument was provided
+	if [ $# -lt 1 ] && [ -n "$HOSTNAME" ];
+	then
+		IP=$HOSTNAME
+		shift
+	elif [ $# -ge 1 ];
+	then
+		IP=$1
+		shift
+	fi
+	USER=$1
+else
+	if [ $# -eq 0 ]
+	  then
+	    echo "No arguments supplied. Need a hostname/IP and a user eg. ./certDP.sh tak.example.com user1"
+	    exit
+	fi
+	IP=$1
+	USER=$2
 fi
 
-IP=$1
-USER=$2
+if [ -z "$IP" ] || [ -z "$USER" ];
+then
+	echo "Missing arguments. Need a hostname/IP and a user eg. ./certDP.sh tak.example.com user1"
+	exit
+fi
 
 # server.pref
 

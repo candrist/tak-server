@@ -351,13 +351,13 @@ while :
 do
 	sleep 5 # let the PG stderr messages conclude...
 	printf $warning "------------CERTIFICATE GENERATION--------------\n"
-	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeRootCa.sh --ca-name CRFtakserver"
+	$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeRootCa.sh --ca-name CRFtakserver"
 	if [ $? -eq 0 ];
 	then
-		$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $CERT_HOST"
+		$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh server $CERT_HOST"
 		if [ $? -eq 0 ];
 		then
-			$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client $user"	
+			$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client $user"	
 			if [ $? -eq 0 ];
 			then
 				# Set permissions so user can write to certs/files
@@ -375,12 +375,12 @@ done
 printf $info "Creating certificates for 2 users in tak/certs/files for a quick setup via TAK's import function\n"
 
 # Make 2 users
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user1"
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user2"
+$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user1"
+$DOCKER_COMPOSE exec -e COUNTRY=$country -e STATE=$state -e CITY=$city -e ORGANIZATIONAL_UNIT=$orgunit tak bash -c "cd /opt/tak/certs && ./makeCert.sh client user2"
 $DOCKER_COMPOSE exec tak bash -c "chown -R 1000:1000 /opt/tak/certs/"
 
-./scripts/certDP.sh $IP user1
-./scripts/certDP.sh $IP user2
+./scripts/certDP.sh $CERT_FILENAME user1
+./scripts/certDP.sh $CERT_FILENAME user2
 
 printf $info "Waiting for TAK server to connect to DB. This should loop several times only...\n"
 #$DOCKER_COMPOSE start tak
