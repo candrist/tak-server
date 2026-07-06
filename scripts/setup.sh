@@ -23,6 +23,11 @@ if [ -f ".env" ];
 then
 	printf $info "Loading configuration from existing .env file...\n"
 	source .env
+	# Use HOSTNAME from .env if it was set (convert to lowercase variable for internal use)
+	if [ -n "$HOSTNAME" ];
+	then
+		hostname=$HOSTNAME
+	fi
 fi
 
 printf $success "\nTAK server setup script sponsored by CloudRF.com - \"The API for RF\"\n"
