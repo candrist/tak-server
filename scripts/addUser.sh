@@ -21,24 +21,26 @@ fi
 
 if [ -z "$1" ];
 then
-	printf $danger "Usage: ./addUser.sh <username> [password] [--admin] [--no-cert-package]\n"
+	printf $danger "Usage: ./addUser.sh <username> [password] [--admin] [--no-password] [--no-cert-package]\n"
 	printf $info "Example: ./addUser.sh newuser\n"
 	printf $info "Example: ./addUser.sh newuser mypassword\n"
 	printf $info "Example: ./addUser.sh newuser mypassword --admin\n"
-	printf $info "Example: ./addUser.sh newuser mypassword --admin --no-cert-package\n"
+	printf $info "Example: ./addUser.sh newuser --no-password (cert-only access)\n"
+	printf $info "Example: ./addUser.sh newuser --no-password --admin\n"
 	exit 1
 fi
 
 USERNAME=$1
 CREATE_DP=true
 CREATE_ADMIN=false
+USE_PASSWORD=true
 
 # Check if password is provided
-if [ -n "$2" ] && [ "$2" != "--admin" ] && [ "$2" != "--no-cert-package" ];
+if [ -n "$2" ] && [ "$2" != "--admin" ] && [ "$2" != "--no-cert-package" ] && [ "$2" != "--no-password" ];
 then
 	password=$2
 else
-	# Generate random password
+	# Generate random password by default
 	pwd=$(cat /dev/urandom | tr -dc '[:alpha:][:digit:]' | fold -w ${1:-11} | head -n 1)
 	password=$pwd"DRN1!"
 fi
@@ -52,6 +54,10 @@ for arg in "$@"; do
 	if [ "$arg" == "--no-cert-package" ];
 	then
 		CREATE_DP=false
+	fi
+	if [ "$arg" == "--no-password" ];
+	then
+		USE_PASSWORD=false
 	fi
 done
 
@@ -87,7 +93,19 @@ fi
 
 # Add user to TAK database
 printf $info "Adding user to TAK database...\n"
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar /opt/tak/utils/UserManager.jar usermod -A -p '$password' $USERNAME"
+if [ "$CREATE_ADMIN" = true ];
+then
+	ADMIN_FLAG="-A"
+else
+	ADMIN_FLAG=""
+fi
+
+if [ "$USE_PASSWORD" = true ];
+then
+	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar /opt/tak/utils/UserManager.jar usermod $ADMIN_FLAG -p '$password' $USERNAME"
+else
+	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar /opt/tak/utils/UserManager.jar usermod $ADMIN_FLAG $USERNAME"
+fi
 if [ $? -ne 0 ];
 then
 	printf $danger "Failed to add user to database\n"
@@ -103,27 +121,6 @@ then
 	exit 1
 fi
 
-# Assign roles
-printf $info "Assigning roles...\n"
-# Always add ROLE_USER
-$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar moduser $USERNAME ROLE_USER"
-if [ $? -ne 0 ];
-then
-	printf $danger "Failed to assign ROLE_USER\n"
-	exit 1
-fi
-
-# Add ROLE_ADMIN if requested
-if [ "$CREATE_ADMIN" = true ];
-then
-	$DOCKER_COMPOSE exec tak bash -c "cd /opt/tak/ && java -jar utils/UserManager.jar moduser $USERNAME ROLE_ADMIN"
-	if [ $? -ne 0 ];
-	then
-		printf $danger "Failed to assign ROLE_ADMIN\n"
-		exit 1
-	fi
-fi
-
 # Set permissions
 $DOCKER_COMPOSE exec tak bash -c "chown -R 1000:1000 /opt/tak/certs/"
 
@@ -136,12 +133,17 @@ fi
 
 printf $success "\n=== User Created Successfully ===\n"
 printf $success "Username: $USERNAME\n"
-printf $success "Password: $password\n"
+if [ "$USE_PASSWORD" = true ];
+then
+	printf $success "Password: $password\n"
+else
+	printf $success "Access: Certificate-only (no password)\n"
+fi
 if [ "$CREATE_ADMIN" = true ];
 then
-	printf $success "Roles: ROLE_USER, ROLE_ADMIN\n"
+	printf $success "Status: Administrator\n"
 else
-	printf $success "Roles: ROLE_USER\n"
+	printf $success "Status: Regular User\n"
 fi
 printf $info "Certificate: tak/certs/files/$USERNAME.p12\n"
 if [ "$CREATE_DP" = true ];
