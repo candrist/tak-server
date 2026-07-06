@@ -4,7 +4,6 @@
 
 This is a Docker wrapper for an official 'OG' TAK server from [TAK Product Center](https://tak.gov/) intended for beginners. It will give you a turnkey TAK server with SSL which works with ATAK, iTAK, WinTAK.
 
-
 ## IMPORTANT: Download the Official TAK Release
 
 Before you can build this, you must download a **TAKSERVER-DOCKER-X.X-RELEASE**.
@@ -13,7 +12,7 @@ Releases are now public at [https://tak.gov/products/tak-server](https://tak.gov
 
 Please follow account registration process, and once completed go to the link above.
 
-The integrity of the release will be checked at setup against the MD5/SHA1 checksums in this repo. **THESE MUST MATCH**. If they do not match, **DO NOT** proceed unless you trust the release. 
+The integrity of the release will be checked at setup against the MD5/SHA1 checksums in this repo. **THESE MUST MATCH**. If they do not match, **DO NOT** proceed unless you trust the release.
 
 Old releases are a security risk as they contain known vulnerabilities. For more information, read the big red notices on tak.gov
 
@@ -21,15 +20,16 @@ Old releases are a security risk as they contain known vulnerabilities. For more
 
 ## TAK Server Release Checksums
 
-| Release Filename                      | Bytes       | MD5 Checksum                       | SHA1 Checksum                              |
-| ------------------------------------- | ----------- | ---------------------------------- | ------------------------------------------ |
-| `takserver-docker-5.2-RELEASE-30.zip`| `517MB` | `b691d1d7377790690e1e5ec0e4a29a56` | `98f13f9140470ee65351e3d25dec097603bfb582` |
-| `takserver-docker-5.2-RELEASE-43.zip`| `517MB` | `0a7398383253707dd7564afc88f29b3b` | `824d7b89fbe6377cb5570f50bb35e6e05c12b230` |
-| `takserver-docker-5.3-RELEASE-24.zip`| `527MB` | `e8a5dc855c4eb67d170bf689017516e8` | `1eaad8c4471392a96c60f56bc2d54f9f3b6d719e` |
-| `takserver-docker-5.3-RELEASE-30.zip`| `527MB` | `b24b5ae01aeac151565aa35a39899785` | `37c3a8f3c7626326504ab8047c42a0473961be24` |
-| `takserver-docker-5.4-RELEASE-19.zip` | `522MB` | `9e6f3e3b61f8677b491d6ed15baf1813` | `2f3ced9b3e81c448e401b995f64566e7b888b991` |
+| Release Filename                       | Bytes   | MD5 Checksum                       | SHA1 Checksum                              |
+| -------------------------------------- | ------- | ---------------------------------- | ------------------------------------------ |
+| `takserver-docker-5.2-RELEASE-30.zip`  | `517MB` | `b691d1d7377790690e1e5ec0e4a29a56` | `98f13f9140470ee65351e3d25dec097603bfb582` |
+| `takserver-docker-5.2-RELEASE-43.zip`  | `517MB` | `0a7398383253707dd7564afc88f29b3b` | `824d7b89fbe6377cb5570f50bb35e6e05c12b230` |
+| `takserver-docker-5.3-RELEASE-24.zip`  | `527MB` | `e8a5dc855c4eb67d170bf689017516e8` | `1eaad8c4471392a96c60f56bc2d54f9f3b6d719e` |
+| `takserver-docker-5.3-RELEASE-30.zip`  | `527MB` | `b24b5ae01aeac151565aa35a39899785` | `37c3a8f3c7626326504ab8047c42a0473961be24` |
+| `takserver-docker-5.4-RELEASE-19.zip`  | `522MB` | `9e6f3e3b61f8677b491d6ed15baf1813` | `2f3ced9b3e81c448e401b995f64566e7b888b991` |
 | `takserver-docker-5.4-RELEASE-106.zip` | `522MB` | `edce00ff13f8fdfb340e7e05eafc5454` | `7f7da1a58544b34e01576b99f8db59e1987cd96c` |
-| `takserver-docker-5.5-RELEASE-58.zip` | `531MB` | `6d362f234305b9a5e8f9245ef8f3e45d` | `7f0c07aa0ad7ff575c0278d734264e3e446ec93c` |
+| `takserver-docker-5.5-RELEASE-58.zip`  | `531MB` | `6d362f234305b9a5e8f9245ef8f3e45d` | `7f0c07aa0ad7ff575c0278d734264e3e446ec93c` |
+| `takserver-docker-5.7-RELEASE-43.zip`  | `535MB` | `7efb0743efecc63ce26782d713d942a8` | `c58977575527b764551429a5f1309233e9f9ca21` |
 
 ## Requirements
 
@@ -40,7 +40,7 @@ Old releases are a security risk as they contain known vulnerabilities. For more
 - Network connection
 - `unzip` and `netstat` utilities
 
-## Setup Video 
+## Setup Video
 
 Please use the below link to see a short video on a complete setup of TAK Server.
 
@@ -95,7 +95,7 @@ To test if you are able to run `docker` commands without `sudo` you can test wit
 docker run hello-world
 ```
 
-### AMD64 & ARM64 (Pi4) setup 
+### AMD64 & ARM64 (Pi4) setup
 
 The script will auto-detect your architecture and use the ARM Docker file if the architecture is determined to be `arm64`.
 
@@ -114,7 +114,26 @@ The `setup.sh` script will populate configuration files, start up TAK server wit
 
 For more information on using TAK server refer to [the documentation on the TAK Product Center GitHub](https://github.com/TAK-Product-Center/Server/tree/main/src/docs).
 
+### Configuration via .env File
+
+You can optionally create a `.env` file in the `tak-server` directory before running `setup.sh` to pre-configure settings:
+
+```bash
+echo "HOSTNAME=mytakserver.example.com" > .env
+```
+
+Supported `.env` variables:
+
+- `HOSTNAME` - Hostname or FQDN to use for certificate generation instead of the detected IP address. If not set, the script will generate certificates using the IP address.
+- `COUNTRY` - Country code for certificate generation (default: `GB`)
+- `STATE` - State/Province for certificate generation (default: `Warwickshire`)
+- `CITY` - City for certificate generation (default: `Coventry`)
+- `ORGANIZATIONAL_UNIT` - Organization unit for certificate generation (default: `TAK`)
+
+If a `HOSTNAME` is defined, the server certificates will be generated with that hostname, and the login URL will use the hostname instead of the IP address.
+
 ### NIC selection
+
 The interactive network interface prompt requires you to select your interface. Ensure this is the interface on which you want clients to access the service. For a wired network it's likely en* or eth*.
 
     Choose your TAK SERVER network interface wisely...
@@ -145,7 +164,7 @@ If your TAK Server was able to successfully be installed then you should see in 
 ```console
 Import the admin.p12 certificate from this folder to your browser as per the README.md file
 Login at https://10.0.0.6:8443 with your admin account. No need to run the /setup step as this has been done.
-Certificates and *CERT DATA PACKAGES* are in tak/certs/files 
+Certificates and *CERT DATA PACKAGES* are in tak/certs/files
 
 Setup script sponsored by CloudRF.com - "The API for RF"
 
@@ -163,36 +182,35 @@ Docker containers should automatically start with the docker service from now on
 
 ## Admin Login
 
-The login to the web interface requires the certificate created during setup. The certificate needs to be uploaded to the browser first. The name of this certificate is the one which you have typed after specifying the State, City, and Company during the certificate creation. 
+The login to the web interface requires the certificate created during setup. The certificate needs to be uploaded to the browser first. The name of this certificate is the one which you have typed after specifying the State, City, and Company during the certificate creation.
 
 Default certificate name is `admin.p12`. The certificates names can be checked by:
 
 ```bash
-docker exec -it tak-server-tak-1 ls -hal /opt/tak/certs/files 
+docker exec -it tak-server-tak-1 ls -hal /opt/tak/certs/files
 ```
 
 ### Installing Your Admin Certificate
 
 The `admin.p12` certificate needs to be copied from `./tak/certs/files/` and installed in a web browser for you to be able to administer your TAK Server. This not only provides TLS transport security with mutual authentication (Client > Server, Server > Client) but it proves your identity and saves you having to type a tedious password each time.
 
-
 #### Google Chrome
 
-* Go to **"Settings"** --> **"Privacy and Security"** --> **"Security"** --> **"Manage Certificates"**
-* Navigate to **"Your certificates"** 
-* Press **"Import"** button and choose your `.p12` file (Default password is `atakatak`)
+- Go to **"Settings"** --> **"Privacy and Security"** --> **"Security"** --> **"Manage Certificates"**
+- Navigate to **"Your certificates"**
+- Press **"Import"** button and choose your `.p12` file (Default password is `atakatak`)
 
 The web UI should be now accessible via the address given below.
 
 #### Mozilla Firefox
 
-* Go to **"Settings"** --> **"Privacy & Security"** --> scroll down to **"Certificates"** section.
-* Click the button **"View Certificates"**
-* Choose **"Your Certificates"** section and **"Import"** your `.p12` certificate (Default password is `atakatak`)
-* Choose the **"Authorities"** section
-* Locate **"TAK"** line, there should be your certificate name displayed underneath it
-* Click your certificate name and press button **"Edit Trust"**
-* __*TICK*__ the box with **"This certificate can identify web sites"** statement, then click **"OK"**
+- Go to **"Settings"** --> **"Privacy & Security"** --> scroll down to **"Certificates"** section.
+- Click the button **"View Certificates"**
+- Choose **"Your Certificates"** section and **"Import"** your `.p12` certificate (Default password is `atakatak`)
+- Choose the **"Authorities"** section
+- Locate **"TAK"** line, there should be your certificate name displayed underneath it
+- Click your certificate name and press button **"Edit Trust"**
+- **_TICK_** the box with **"This certificate can identify web sites"** statement, then click **"OK"**
 
 The web UI should be now accessible via the address given below.
 
@@ -242,7 +260,7 @@ tail -f ./tak/logs/takserver.log
 sudo ./scripts/cleanup.sh
 ```
 
-This script will stop the TAK Server container, remove the mapped database volume and remove the folder `tak` which is created in the project root directory (cloned from GitHub) during the setup process. 
+This script will stop the TAK Server container, remove the mapped database volume and remove the folder `tak` which is created in the project root directory (cloned from GitHub) during the setup process.
 
 **WARNING** - If you have data in an existing TAK database container it will be lost.
 
@@ -272,7 +290,7 @@ You can run a script to serve the `.zip` files on TCP port `12345`, for example,
 ./scripts/shareCerts.sh
 Serving HTTP on 0.0.0.0 port 12345 (http://0.0.0.0:12345/) ...
 10.0.0.5 - - [23/Nov/2022 15:49:52] "GET / HTTP/1.1" 200 -
-10.0.0.5 - - [23/Nov/2022 15:49:54] "GET /user1-10.0.0.3.dp.zip HTTP/1.1" 200 
+10.0.0.5 - - [23/Nov/2022 15:49:54] "GET /user1-10.0.0.3.dp.zip HTTP/1.1" 200
 ```
 
 Stop the script with `Ctrl-C` once transferred to close the server.
@@ -289,7 +307,7 @@ https://www.freecodecamp.org/news/how-to-make-your-first-pull-request-on-github-
 
 ## Authors and Acknowledgment
 
-Thanks to the TAK product center for open-sourcing and maintaining all things TAK. 
+Thanks to the TAK product center for open-sourcing and maintaining all things TAK.
 
 Thanks to James Wu 'wubar' on GitLab/Discord for publishing the Docker wrapper on which this was built.
 
